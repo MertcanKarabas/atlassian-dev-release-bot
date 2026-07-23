@@ -8,19 +8,39 @@ on:
 jobs:
   run-bot:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v3
-      
+      - uses: actions/checkout@v4
+
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-          
+          cache: pip
+
       - name: Install dependencies
-        run: pip install feedparser requests
-        
+        run: pip install -r requirements.txt
+
+      # Keeps the shallow Bitbucket clones between runs, so each run only fetches
+      # new commits instead of cloning every repository from scratch.
+      - name: Restore repository cache
+        uses: actions/cache@v4
+        with:
+          path: .repo-cache
+          key: repo-cache-${{ github.run_id }}
+          restore-keys: repo-cache-
+
       - name: Run script
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          BITBUCKET_WORKSPACE: ${{ secrets.BITBUCKET_WORKSPACE }}
+          BITBUCKET_TOKEN: ${{ secrets.BITBUCKET_TOKEN }}
+          # Set only when BITBUCKET_TOKEN is an Atlassian account API token.
+          BITBUCKET_EMAIL: ${{ secrets.BITBUCKET_EMAIL }}
+          # Optional repository variables; empty values fall back to the defaults.
+          BITBUCKET_REPOS: ${{ vars.BITBUCKET_REPOS }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
         run: python bot.py
