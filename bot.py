@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from time import mktime
 
 # 1. Configuration
-RSS_URL = "https://developer.atlassian.com/changelog/feed" 
+RSS_URL = "https://developer.atlassian.com/changelog/" 
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
