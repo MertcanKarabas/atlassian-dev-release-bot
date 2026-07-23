@@ -37,6 +37,13 @@ def main():
     }
     
     response = requests.post(url, json=payload)
+    response = requests.post(url, json=payload)
+    
+    # Add this line to reveal the specific Telegram error:
+    print(f"Telegram API Response: {response.text}") 
+    
+    response.raise_for_status()
+    print("Message sent successfully!")
     response.raise_for_status()
     print("Message sent successfully!")
 
