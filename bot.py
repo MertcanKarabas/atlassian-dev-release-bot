@@ -5,7 +5,6 @@ from datetime import datetime, timedelta, timezone
 from time import mktime
 
 # 1. Configuration
-# The unified Atlassian developer changelog RSS feed
 RSS_URL = "https://developer.atlassian.com/changelog/feed" 
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
@@ -20,25 +19,26 @@ def main():
         entry_date = datetime.fromtimestamp(mktime(entry.published_parsed), tz=timezone.utc)
         
         if entry_date > yesterday:
-            recent_entries.append(f"• {entry.title}")
+            recent_entries.append(f"• <a href='{entry.link}'>{entry.title}</a>")
             
-    # 3. Format and send the message via Telegram
+    # 3. Format the message depending on whether there are updates
     if recent_entries:
-        message = "🚀 Atlassian Developer Updates (Last 24h)\n\n" + "\n".join(recent_entries)
-        
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-        payload = {
-            "chat_id": CHAT_ID,
-            "text": message,
-            "parse_mode": "HTML",
-            "disable_web_page_preview": True
-        }
-        
-        response = requests.post(url, json=payload)
-        response.raise_for_status()
-        print("Message sent successfully!")
+        message = "<b>🚀 Atlassian Developer Updates (Last 24h)</b>\n\n" + "\n".join(recent_entries)
     else:
-        print("No updates in the last 24 hours.")
+        message = "<b>🚀 Atlassian Developer Updates</b>\n\nNo new release notes published in the last 24 hours. 💤"
+        
+    # 4. Send the message via Telegram (this now runs every time)
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    payload = {
+        "chat_id": CHAT_ID,
+        "text": message,
+        "parse_mode": "HTML",
+        "disable_web_page_preview": True
+    }
+    
+    response = requests.post(url, json=payload)
+    response.raise_for_status()
+    print("Message sent successfully!")
 
 if __name__ == "__main__":
     main()
