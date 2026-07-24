@@ -31,7 +31,18 @@ RSS_URL = _env(
     "CHANGELOG_RSS_URL",
     "https://developer.atlassian.com/changelog/rss/a/f859a215-65f3-4ebc-b7dd-10007cfd7f60",
 )
-LOOKBACK_HOURS = _env_int("LOOKBACK_HOURS", 24)
+# Weekly digest: cover the whole week. 24 for a daily run.
+LOOKBACK_HOURS = _env_int("LOOKBACK_HOURS", 168)
+
+
+def _window_label():
+    if LOOKBACK_HOURS % 24 == 0:
+        days = LOOKBACK_HOURS // 24
+        return f"Last {days} day" + ("s" if days != 1 else "")
+    return f"Last {LOOKBACK_HOURS}h"
+
+
+WINDOW_LABEL = _window_label()
 
 # --- Telegram ---------------------------------------------------------------
 BOT_TOKEN = _env("TELEGRAM_BOT_TOKEN")
@@ -62,8 +73,9 @@ LLM_MAX_RETRIES = _env_int("LLM_MAX_RETRIES", 4)
 # One-line summary under every entry. Uses the LLM in a single batched call when
 # LLM_API_KEY is set, otherwise falls back to trimmed feed text. Set false for titles only.
 SUMMARISE_ENTRIES = _env_bool("SUMMARISE_ENTRIES", True)
-# Cap the number of changelog entries sent through the LLM in one run.
-MAX_ANALYSED_ENTRIES = _env_int("MAX_ANALYSED_ENTRIES", 10)
+# Cap the number of entries scanned for code impact per run. A busy week rarely
+# exceeds this; entries with no matches cost no LLM call, so the cap is cheap to raise.
+MAX_ANALYSED_ENTRIES = _env_int("MAX_ANALYSED_ENTRIES", 20)
 MAX_MATCHES_PER_TERM = _env_int("MAX_MATCHES_PER_TERM", 15)
 MAX_MATCHES_PER_ENTRY = _env_int("MAX_MATCHES_PER_ENTRY", 60)
 # When false, the LLM sees repo/file/line locations but never the source line

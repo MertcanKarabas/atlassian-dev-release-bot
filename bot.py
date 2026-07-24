@@ -165,7 +165,7 @@ def main():
     if not entries:
         notifier.send(
             "<b>🚀 Atlassian Developer Updates</b>\n\n"
-            "No new release notes published in the last 24 hours. 💤"
+            f"No new release notes in the {config.WINDOW_LABEL.lower()}. 💤"
         )
         return
 
@@ -184,7 +184,7 @@ def main():
 
     summaries = build_summaries(entries)
 
-    header_lines = ["<b>🚀 Atlassian Developer Updates (Last 24h)</b>"]
+    header_lines = [f"<b>🚀 Atlassian Developer Updates ({config.WINDOW_LABEL})</b>"]
     if verdicts:
         hits = sum(
             1 for v in verdicts.values() if v.get("impact") in ("AFFECTED", "POSSIBLY_AFFECTED")

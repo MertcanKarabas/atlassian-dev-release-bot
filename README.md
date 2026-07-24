@@ -1,11 +1,12 @@
 # atlassian-dev-release-bot
 
-Daily Telegram digest of the [Atlassian developer changelog](https://developer.atlassian.com/changelog/),
-with optional impact analysis against our own Bitbucket repositories.
+Weekly Telegram digest of the [Atlassian developer changelog](https://developer.atlassian.com/changelog/),
+with optional impact analysis against our own Bitbucket repositories. Runs every Monday
+at 07:00 UTC (10:00 in Turkey, UTC+3).
 
 ## What it does
 
-1. Reads the changelog RSS feed and keeps entries from the last 24 hours.
+1. Reads the changelog RSS feed and keeps entries from the last 7 days (`LOOKBACK_HOURS`).
 2. Writes a detailed summary for every entry (batched LLM call, or trimmed feed text
    when no LLM is configured).
 3. For every entry: extracts the identifiers it mentions (REST paths, package names,
@@ -79,12 +80,12 @@ cost of sending code excerpts to the provider. Decide that against your own poli
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `LOOKBACK_HOURS` | `24` | Feed window |
+| `LOOKBACK_HOURS` | `168` | Feed window (168 = 7 days; use 24 for a daily run) |
 | `SUMMARISE_ENTRIES` | `true` | One-line summary under each entry (LLM if set, else feed text) |
 | `BITBUCKET_REPOS` | all | Comma-separated repo slugs to scan |
 | `BITBUCKET_BRANCH` | default branch | Branch to scan in every repo |
 | `MAX_REPOS` | `50` | Cap on repositories cloned |
-| `MAX_ANALYSED_ENTRIES` | `10` | Cap on entries scanned for code impact per run (breaking first) |
+| `MAX_ANALYSED_ENTRIES` | `20` | Cap on entries scanned for code impact per run (breaking first) |
 | `MAX_MATCHES_PER_TERM` | `15` | Cap on grep hits per search term |
 | `SEND_CODE_SNIPPETS` | `false` | Include matched source lines in the LLM prompt |
 | `CHANGELOG_RSS_URL` | all-products feed | Replace with a filtered feed from the changelog page's "Generate feed" dialog |

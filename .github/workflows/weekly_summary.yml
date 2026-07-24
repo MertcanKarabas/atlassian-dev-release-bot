@@ -1,8 +1,9 @@
-name: Daily Atlassian Changelog Bot
+name: Weekly Atlassian Changelog Bot
 
 on:
   schedule:
-    - cron: "0 8 * * *" # Runs daily at 8:00 AM UTC
+    # 07:00 UTC every Monday = 10:00 Monday in Turkey (UTC+3, no DST).
+    - cron: "0 7 * * 1"
   workflow_dispatch: # Allows you to run it manually from the Actions tab
 
 jobs:
