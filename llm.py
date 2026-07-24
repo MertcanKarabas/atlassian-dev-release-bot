@@ -26,8 +26,10 @@ BODY: {body}"""
 
 SUMMARY_PROMPT = """You summarise Atlassian developer changelog entries for busy engineers.
 
-Write one tight sentence per entry saying what actually changed and who it affects.
-No preamble, no "this entry", no marketing words. Plain facts. Max 240 characters each.
+For each entry write 2-4 sentences covering: what concretely changed, which product /
+API / package it touches, why it matters, and any deadline or required migration. Name
+specific identifiers (endpoints, fields, package names) when the entry gives them. Plain
+facts, no preamble, no "this entry", no marketing words. Aim for 300-500 characters.
 
 Return JSON only: {{"summaries": [{{"i": 0, "summary": "..."}}, ...]}}, one object per entry,
 keeping the same "i" index you were given.
@@ -124,7 +126,7 @@ def summarise_entries(entries):
 
     rendered = "\n".join(
         f"[{i}] ({entry.category or 'update'}) {entry.title}\n"
-        f"    {entry.text[:700]}"
+        f"    {entry.text[:1400]}"
         for i, entry in enumerate(entries)
     )
     prompt = SUMMARY_PROMPT.format(entries=rendered)
@@ -144,7 +146,7 @@ def summarise_entries(entries):
         except (KeyError, TypeError, ValueError):
             continue
         if summary and 0 <= index < len(entries):
-            summaries[entries[index].uid] = summary[:280]
+            summaries[entries[index].uid] = summary[:600]
     return summaries
 
 

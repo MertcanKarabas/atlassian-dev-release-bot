@@ -6,14 +6,19 @@ with optional impact analysis against our own Bitbucket repositories.
 ## What it does
 
 1. Reads the changelog RSS feed and keeps entries from the last 24 hours.
-2. Marks entries as breaking based on their category (`Deprecation Notice`, `Removed`,
-   `Changed`, `Security`, ...) or on wording like "will be removed" / "no longer".
-3. For each breaking entry: extracts the identifiers it mentions (REST paths, package
-   names, field names, scopes), `git grep`s them across our Bitbucket checkouts, and asks
-   an LLM whether the evidence means our code is affected.
-4. Sends one Telegram message: findings first, then the remaining updates.
+2. Writes a detailed summary for every entry (batched LLM call, or trimmed feed text
+   when no LLM is configured).
+3. For every entry: extracts the identifiers it mentions (REST paths, package names,
+   field names, scopes), `git grep`s them across our Bitbucket checkouts, and asks an LLM
+   whether the matches mean our code is affected. Breaking entries (`Deprecation`,
+   `Removed`, `Changed`, `Security`, ...) are scanned first so the per-run cap never
+   drops them.
+4. Sends one Telegram message. Each entry shows a colour + `[Category]` label, its
+   summary, and a verdict: 🔴 may affect your code / 🟠 might / 🟢 does not. Most-affected
+   entries are listed first.
 
-Step 3 is optional. Without Bitbucket and LLM credentials the bot sends a plain digest.
+Step 3 is optional. Without Bitbucket and LLM credentials the bot sends a plain digest
+(category + summary, no verdicts).
 
 ## Setup
 
@@ -61,8 +66,9 @@ Any OpenAI-compatible chat endpoint works. Set `LLM_API_KEY` as a secret, and
 the provider return an error and the bot silently falls back to feed-text summaries.
 
 Budget per run: one batched summary request for all entries, plus up to two requests per
-breaking entry (capped by `MAX_ANALYSED_ENTRIES`, default 10). A normal day is a handful
-of short requests.
+*scanned* entry (capped by `MAX_ANALYSED_ENTRIES`, default 10). Entries that mention no
+code identifiers, or whose identifiers are absent from your repos, are decided without an
+LLM call — so a normal day is a handful of short requests.
 
 **Free tiers usually train on your data.** By default the model only receives changelog
 text plus `repo/path:line` locations and matched identifiers — never source code. Set
@@ -78,7 +84,7 @@ cost of sending code excerpts to the provider. Decide that against your own poli
 | `BITBUCKET_REPOS` | all | Comma-separated repo slugs to scan |
 | `BITBUCKET_BRANCH` | default branch | Branch to scan in every repo |
 | `MAX_REPOS` | `50` | Cap on repositories cloned |
-| `MAX_ANALYSED_ENTRIES` | `10` | Cap on breaking entries sent to the LLM per run |
+| `MAX_ANALYSED_ENTRIES` | `10` | Cap on entries scanned for code impact per run (breaking first) |
 | `MAX_MATCHES_PER_TERM` | `15` | Cap on grep hits per search term |
 | `SEND_CODE_SNIPPETS` | `false` | Include matched source lines in the LLM prompt |
 | `CHANGELOG_RSS_URL` | all-products feed | Replace with a filtered feed from the changelog page's "Generate feed" dialog |

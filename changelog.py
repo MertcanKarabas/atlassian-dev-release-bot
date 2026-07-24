@@ -67,7 +67,7 @@ class _TextExtractor(HTMLParser):
         self.parts.append(data)
 
 
-def short_summary(text, max_chars=240):
+def short_summary(text, max_chars=400):
     """Trim feed prose to whole sentences within max_chars. Non-AI fallback."""
     text = " ".join((text or "").split())
     if len(text) <= max_chars:
