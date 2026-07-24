@@ -8,7 +8,7 @@ import requests
 
 import config
 
-JSON_BLOCK = re.compile(r"\{.*\}", re.DOTALL)
+JSON_BLOCK = re.compile(r"[\{\[].*[\}\]]", re.DOTALL)
 
 TERMS_PROMPT = """You help a team find out whether an Atlassian platform change affects their code.
 
@@ -23,6 +23,17 @@ Return JSON only: {{"terms": ["...", "..."]}} with at most 10 entries.
 TITLE: {title}
 CATEGORY: {category}
 BODY: {body}"""
+
+SUMMARY_PROMPT = """You summarise Atlassian developer changelog entries for busy engineers.
+
+Write one tight sentence per entry saying what actually changed and who it affects.
+No preamble, no "this entry", no marketing words. Plain facts. Max 240 characters each.
+
+Return JSON only: {{"summaries": [{{"i": 0, "summary": "..."}}, ...]}}, one object per entry,
+keeping the same "i" index you were given.
+
+ENTRIES:
+{entries}"""
 
 ASSESS_PROMPT = """You assess whether an Atlassian platform change breaks a specific codebase.
 
@@ -104,6 +115,37 @@ def _parse_json(text):
     if not block:
         raise LLMError(f"LLM returned no JSON: {text[:200]}")
     return json.loads(block.group(0))
+
+
+def summarise_entries(entries):
+    """One LLM call for all entries: return {uid: summary}. Empty dict on failure."""
+    if not config.LLM_API_KEY or not entries:
+        return {}
+
+    rendered = "\n".join(
+        f"[{i}] ({entry.category or 'update'}) {entry.title}\n"
+        f"    {entry.text[:700]}"
+        for i, entry in enumerate(entries)
+    )
+    prompt = SUMMARY_PROMPT.format(entries=rendered)
+
+    try:
+        payload = _parse_json(_chat(prompt))
+        rows = payload if isinstance(payload, list) else payload.get("summaries", [])
+    except (LLMError, ValueError) as error:
+        print(f"Summarisation failed, falling back to feed text: {error}")
+        return {}
+
+    summaries = {}
+    for row in rows:
+        try:
+            index = int(row["i"])
+            summary = str(row["summary"]).strip()
+        except (KeyError, TypeError, ValueError):
+            continue
+        if summary and 0 <= index < len(entries):
+            summaries[entries[index].uid] = summary[:280]
+    return summaries
 
 
 def refine_terms(entry, seed_terms):

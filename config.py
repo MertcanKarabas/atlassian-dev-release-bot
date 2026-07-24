@@ -59,6 +59,9 @@ LLM_TIMEOUT = _env_int("LLM_TIMEOUT", 120)
 LLM_MAX_RETRIES = _env_int("LLM_MAX_RETRIES", 4)
 
 # --- Analysis behaviour -----------------------------------------------------
+# One-line summary under every entry. Uses the LLM in a single batched call when
+# LLM_API_KEY is set, otherwise falls back to trimmed feed text. Set false for titles only.
+SUMMARISE_ENTRIES = _env_bool("SUMMARISE_ENTRIES", True)
 # Cap the number of changelog entries sent through the LLM in one run.
 MAX_ANALYSED_ENTRIES = _env_int("MAX_ANALYSED_ENTRIES", 10)
 MAX_MATCHES_PER_TERM = _env_int("MAX_MATCHES_PER_TERM", 15)

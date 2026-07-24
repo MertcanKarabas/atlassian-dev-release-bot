@@ -67,6 +67,18 @@ class _TextExtractor(HTMLParser):
         self.parts.append(data)
 
 
+def short_summary(text, max_chars=240):
+    """Trim feed prose to whole sentences within max_chars. Non-AI fallback."""
+    text = " ".join((text or "").split())
+    if len(text) <= max_chars:
+        return text
+    clipped = text[:max_chars]
+    cut = max(clipped.rfind(". "), clipped.rfind("! "), clipped.rfind("? "))
+    if cut >= 60:
+        return clipped[: cut + 1]
+    return clipped[: clipped.rfind(" ")].rstrip(",;:") + "…"
+
+
 def strip_html(markup):
     """Flatten an HTML fragment to readable plain text."""
     parser = _TextExtractor()

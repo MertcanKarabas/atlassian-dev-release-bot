@@ -58,7 +58,21 @@ def analyse(entries, repos):
     return results
 
 
-def render_blocks(entries, analysis):
+def build_summaries(entries):
+    """Return {uid: one-line summary}, LLM-batched when possible, feed-text otherwise."""
+    if not config.SUMMARISE_ENTRIES:
+        return {}
+    summaries = llm.summarise_entries(entries) if config.LLM_API_KEY else {}
+    # Fill any gaps (LLM off, failed, or skipped an entry) with trimmed feed prose.
+    for entry in entries:
+        if not summaries.get(entry.uid):
+            fallback = changelog.short_summary(entry.text)
+            if fallback:
+                summaries[entry.uid] = fallback
+    return summaries
+
+
+def render_blocks(entries, analysis, summaries):
     """Build the Telegram message body, impact findings first."""
     blocks = []
     assessed = {entry.uid for entry, _ in analysis}
@@ -86,7 +100,12 @@ def render_blocks(entries, analysis):
     if rest:
         if blocks:
             blocks.append("<b>Other updates</b>")
-        blocks.extend(f"• {_link(entry)}" for entry in rest)
+        for entry in rest:
+            lines = [f"• {_link(entry)}"]
+            summary = summaries.get(entry.uid)
+            if summary:
+                lines.append(f"  {html.escape(summary)}")
+            blocks.append("\n".join(lines))
 
     return blocks
 
@@ -116,8 +135,11 @@ def main():
             "(needs BITBUCKET_WORKSPACE, BITBUCKET_TOKEN and LLM_API_KEY)."
         )
 
+    summaries = build_summaries(entries)
+
     header = "<b>🚀 Atlassian Developer Updates (Last 24h)</b>"
-    for message in notifier.split_messages(render_blocks(entries, analysis), header):
+    blocks = render_blocks(entries, analysis, summaries)
+    for message in notifier.split_messages(blocks, header):
         notifier.send(message)
 
 
